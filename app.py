@@ -27,8 +27,8 @@ from build_report import (
     PALETTE,
     SEQUENTIAL_CMAP,
     DOW_ORDER,
-    TRANSACTIONS_FEB_MAR,
-    TRANSACTIONS_FEB_MAR_PERIOD,
+    TRANSACTIONS_BY_DEST,
+    TRANSACTIONS_PERIOD,
     load_data,
     load_enrichment,
 )
@@ -366,25 +366,25 @@ with tabs[3]:
 
     # ──────────────────────────────────────────────────────────────────────
     # Contact rate — tickets ÷ transactions by destination country
-    # Restricted to Feb + March so denominator and numerator match.
+    # Both numerator and denominator cover Feb-Apr 2026.
     # ──────────────────────────────────────────────────────────────────────
-    st.markdown(f"##### Contact rate by destination country ({TRANSACTIONS_FEB_MAR_PERIOD})")
+    st.markdown(f"##### Contact rate by destination country ({TRANSACTIONS_PERIOD})")
     st.caption(
-        f"Contact rate = (tickets ÷ transactions) × 100. Ticket count restricted "
-        f"to {TRANSACTIONS_FEB_MAR_PERIOD} to match the transaction-volume denominator. "
-        f"April tickets are excluded from this table only — they're still in every other view."
+        f"Contact rate = (tickets ÷ transactions) × 100. Tickets respect the current "
+        f"sidebar filters; transactions come from the {TRANSACTIONS_PERIOD} operational "
+        f"export. Both cover the same period."
     )
-    df_fm = df[df["month"].isin(["2026-02", "2026-03"])].copy()
     rows = []
-    for dest, vol in TRANSACTIONS_FEB_MAR.items():
-        n_tickets = int((df_fm["Destination Country"] == dest).sum())
+    for dest, vol in TRANSACTIONS_BY_DEST.items():
+        dest_mask = df["Destination Country"] == dest
+        n_tickets = int(dest_mask.sum())
         rate = (n_tickets / vol["transactions"] * 100) if vol["transactions"] else 0
-        n_refunds = int(((df_fm["Destination Country"] == dest) & (df_fm["subcategory"] == "Refund")).sum())
-        n_lh = int(((df_fm["Destination Country"] == dest) & (df_fm["Order Status"] == "Legal Hold")).sum())
+        n_refunds = int((dest_mask & (df["subcategory"] == "Refund")).sum())
+        n_lh = int((dest_mask & (df["Order Status"] == "Legal Hold")).sum())
         rows.append({
             "Destination": dest,
-            "Transactions (Feb-Mar)": vol["transactions"],
-            "Tickets (Feb-Mar, current filter)": n_tickets,
+            "Transactions": vol["transactions"],
+            "Tickets (current filter)": n_tickets,
             "Contact rate %": round(rate, 2),
             "Refund tickets": n_refunds,
             "Legal Hold tickets": n_lh,
@@ -392,14 +392,14 @@ with tabs[3]:
             "Modifications (operational)": vol["modifications"],
             "Unpaid (operational)": vol["unpaids"],
         })
-    rate_df = pd.DataFrame(rows).sort_values("Transactions (Feb-Mar)", ascending=False)
+    rate_df = pd.DataFrame(rows).sort_values("Transactions", ascending=False)
     # Totals row
-    total_txn = rate_df["Transactions (Feb-Mar)"].sum()
-    total_tix = rate_df["Tickets (Feb-Mar, current filter)"].sum()
+    total_txn = rate_df["Transactions"].sum()
+    total_tix = rate_df["Tickets (current filter)"].sum()
     rate_df.loc[len(rate_df)] = {
         "Destination": "TOTAL",
-        "Transactions (Feb-Mar)": total_txn,
-        "Tickets (Feb-Mar, current filter)": total_tix,
+        "Transactions": total_txn,
+        "Tickets (current filter)": total_tix,
         "Contact rate %": round(total_tix / total_txn * 100, 2) if total_txn else 0,
         "Refund tickets": int(rate_df["Refund tickets"].sum()),
         "Legal Hold tickets": int(rate_df["Legal Hold tickets"].sum()),
@@ -409,8 +409,8 @@ with tabs[3]:
     }
     st.dataframe(rate_df, use_container_width=True, hide_index=True,
                  column_config={
-                     "Transactions (Feb-Mar)": st.column_config.NumberColumn(format="%d"),
-                     "Tickets (Feb-Mar, current filter)": st.column_config.NumberColumn(format="%d"),
+                     "Transactions": st.column_config.NumberColumn(format="%d"),
+                     "Tickets (current filter)": st.column_config.NumberColumn(format="%d"),
                      "Contact rate %": st.column_config.NumberColumn(format="%.2f%%"),
                  })
 

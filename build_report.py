@@ -68,12 +68,11 @@ DATA_DIR.mkdir(exist_ok=True)
 # internal / non-customer-facing sources that distort the corridor analysis.
 EXCLUDED_LOCATIONS = {"60030", "60040"}
 
-# Transaction volume by destination, Feb–Mar 2026.
-# Sourced from "New files/Transactions Feb to March.png". Use these as the
-# denominator for contact-rate calculations (tickets ÷ transactions).
-# IMPORTANT: covers Feb + March only; restrict ticket counts to those two
-# months when computing contact rate so the comparison is like-for-like.
-TRANSACTIONS_FEB_MAR = {
+# Transaction volume by destination, Feb–Apr 2026.
+# Sourced from the user's transactions screenshot (despite the filename
+# "Transactions Feb to March.png", the table covers Feb + March + April).
+# Use these as the denominator for contact-rate calculations (tickets ÷ transactions).
+TRANSACTIONS_BY_DEST = {
     "Samoa":            {"transactions": 21980, "refunds": 254, "modifications": 182, "unpaids": 15,  "paid": 21715},
     "Solomon Islands":  {"transactions": 14210, "refunds": 251, "modifications": 58,  "unpaids": 30,  "paid": 13926},
     "Vanuatu":          {"transactions":  3068, "refunds":  80, "modifications": 22,  "unpaids":  5,  "paid":  2985},
@@ -81,7 +80,7 @@ TRANSACTIONS_FEB_MAR = {
     "Tonga":            {"transactions":   907, "refunds":   7, "modifications":  8,  "unpaids":  0,  "paid":   901},
     "Papua New Guinea": {"transactions":   200, "refunds":   9, "modifications":  0,  "unpaids":  0,  "paid":   191},
 }
-TRANSACTIONS_FEB_MAR_PERIOD = "2026-02 + 2026-03"
+TRANSACTIONS_PERIOD = "Feb-Apr 2026"
 
 # Compliance-flagged definition: any non-blank CEC Code.
 NON_TERMINAL_STATUSES = {
