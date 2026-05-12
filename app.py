@@ -362,22 +362,52 @@ with tabs[3]:
         ax.set_title("Total selling ($)"); st.pyplot(fig, use_container_width=True); plt.close(fig)
         st.caption(f"**Total: ${ct_value.values.sum():,.0f}**")
 
+    # Per-corridor resolution table — avg + median in minutes
+    st.markdown("##### Resolution time by corridor")
+    corridor_res = df.groupby("corridor").agg(
+        Tickets=("Ticket ID", "count"),
+        AvgResMin=("resolution_minutes", "mean"),
+        MedianResMin=("resolution_minutes", "median"),
+        TotalSelling=("Selling Amount", "sum"),
+    ).sort_values("Tickets", ascending=False)
+    corridor_res = corridor_res.round({"AvgResMin": 1, "MedianResMin": 1, "TotalSelling": 2})
+    corridor_res_disp = corridor_res.copy()
+    corridor_res_disp.loc["Total / overall"] = [
+        int(corridor_res["Tickets"].sum()),
+        round(df["resolution_minutes"].mean(), 1),
+        round(df["resolution_minutes"].median(), 1),
+        round(df["Selling Amount"].sum(), 2),
+    ]
+    corridor_res_disp = corridor_res_disp.rename(columns={
+        "AvgResMin": "Avg resolution (min)",
+        "MedianResMin": "Median resolution (min)",
+        "TotalSelling": "Total selling ($)",
+    })
+    st.dataframe(corridor_res_disp, use_container_width=True)
+
     st.markdown("##### Correspondent performance (sorted by stall rate)")
     corr = df.groupby("Correspondent").agg(
         Tickets=("Ticket ID", "count"),
         AvgResMin=("resolution_minutes", "mean"),
+        MedianResMin=("resolution_minutes", "median"),
         PctStalled=("Order Status", lambda s: 100 * s.isin(NON_TERMINAL_STATUSES).mean()),
         TotalSelling=("Selling Amount", "sum"),
     ).sort_values("PctStalled", ascending=False)
-    corr = corr.round({"AvgResMin": 1, "PctStalled": 1, "TotalSelling": 0})
-    # Append a totals row (avg/median weighted, sums where additive)
+    corr = corr.round({"AvgResMin": 1, "MedianResMin": 1, "PctStalled": 1, "TotalSelling": 0})
     corr_disp = corr.copy()
     corr_disp.loc["Total / overall"] = [
         int(corr["Tickets"].sum()),
         round(df["resolution_minutes"].mean(), 1),
+        round(df["resolution_minutes"].median(), 1),
         round(100 * df["Order Status"].isin(NON_TERMINAL_STATUSES).mean(), 1),
         round(df["Selling Amount"].sum(), 0),
     ]
+    corr_disp = corr_disp.rename(columns={
+        "AvgResMin": "Avg resolution (min)",
+        "MedianResMin": "Median resolution (min)",
+        "PctStalled": "% in non-terminal status",
+        "TotalSelling": "Total selling ($)",
+    })
     st.dataframe(corr_disp, use_container_width=True)
 
 
