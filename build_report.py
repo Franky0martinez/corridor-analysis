@@ -144,6 +144,16 @@ def df_to_html_table(df: pd.DataFrame, classes: str = "kpi-table", index: bool =
     return df.to_html(classes=classes, index=index, border=0, escape=False)
 
 
+def with_totals(df: pd.DataFrame, rows: bool = True, cols: bool = True, label: str = "Total") -> pd.DataFrame:
+    """Append a Total row and/or column for use in heatmaps + display tables."""
+    out = df.copy()
+    if cols:
+        out[label] = out.sum(axis=1, numeric_only=True)
+    if rows:
+        out.loc[label] = out.sum(axis=0, numeric_only=True)
+    return out
+
+
 # ────────────────────────────────────────────────────────────────────────────
 # Data load + derived columns
 # ────────────────────────────────────────────────────────────────────────────
@@ -520,11 +530,15 @@ def section_4_corridor(df: pd.DataFrame) -> str:
     ct_count.to_csv(DATA_DIR / "corridor_crosstab_count.csv")
     ct_value.to_csv(DATA_DIR / "corridor_crosstab_value.csv")
 
-    fig, axes = plt.subplots(1, 2, figsize=(13, 4))
-    sns.heatmap(ct_count, annot=True, fmt="d", cmap=SEQUENTIAL_CMAP, ax=axes[0], cbar=False)
-    axes[0].set_title("Ticket count by corridor")
-    sns.heatmap(ct_value, annot=True, fmt=",.0f", cmap=SEQUENTIAL_CMAP, ax=axes[1], cbar=False)
-    axes[1].set_title("Total selling amount by corridor ($)")
+    # With totals row + column appended for the rendered heatmaps
+    ct_count_disp = with_totals(ct_count)
+    ct_value_disp = with_totals(ct_value)
+
+    fig, axes = plt.subplots(1, 2, figsize=(13, 4.5))
+    sns.heatmap(ct_count_disp, annot=True, fmt="d", cmap=SEQUENTIAL_CMAP, ax=axes[0], cbar=False)
+    axes[0].set_title("Ticket count by corridor (+ totals)")
+    sns.heatmap(ct_value_disp, annot=True, fmt=",.0f", cmap=SEQUENTIAL_CMAP, ax=axes[1], cbar=False)
+    axes[1].set_title("Total selling amount by corridor ($) (+ totals)")
     corridor_img = fig_to_img(fig, "04a_corridor_heatmaps")
 
     top_count_corridor = df["corridor"].value_counts().idxmax()
@@ -569,10 +583,11 @@ def section_4_corridor(df: pd.DataFrame) -> str:
 def section_5_lifecycle(df: pd.DataFrame, enrichment: dict) -> str:
     transition = pd.crosstab(df["Original Order Status"], df["Order Status"])
     transition.to_csv(DATA_DIR / "status_transition_matrix.csv")
+    transition_disp = with_totals(transition)
     # Heatmap (Sankey skipped — small n + offline build keeps this dependency-light).
-    fig, ax = plt.subplots(figsize=(9, 6))
-    sns.heatmap(transition, annot=True, fmt="d", cmap=SEQUENTIAL_CMAP, ax=ax, cbar=False)
-    ax.set_title("Order status transition matrix (rows = at ticket creation, cols = at data pull)")
+    fig, ax = plt.subplots(figsize=(9, 6.5))
+    sns.heatmap(transition_disp, annot=True, fmt="d", cmap=SEQUENTIAL_CMAP, ax=ax, cbar=False)
+    ax.set_title("Order status transition matrix — rows = at creation, cols = at data pull (+ totals)")
     ax.set_xlabel("Current Order Status"); ax.set_ylabel("Original Order Status")
     plt.setp(ax.get_xticklabels(), rotation=30, ha="right")
     transition_img = fig_to_img(fig, "05a_status_transition_heatmap")
@@ -629,16 +644,17 @@ def section_6_compliance(df: pd.DataFrame, enrichment: dict) -> str:
     ax.set_ylabel("Tickets")
     cec_img = fig_to_img(fig, "06a_cec_distribution")
 
-    # CEC × reason / corridor / status — render 3 small heatmaps stacked
+    # CEC × reason / corridor / status — render 3 small heatmaps stacked, each with totals
     coded = df[df["CEC Code"] != ""]
-    fig, axes = plt.subplots(1, 3, figsize=(15, 4))
+    fig, axes = plt.subplots(1, 3, figsize=(15, 4.5))
     for ax, (col, title) in zip(
         axes,
         [("subcategory", "CEC × Reason"), ("Destination Country", "CEC × Destination"), ("Order Status", "CEC × Status")]
     ):
         ct = pd.crosstab(coded["CEC Code"], coded[col])
-        sns.heatmap(ct, annot=True, fmt="d", cmap=SEQUENTIAL_CMAP, ax=ax, cbar=False)
-        ax.set_title(title)
+        ct_disp = with_totals(ct) if len(ct) else ct
+        sns.heatmap(ct_disp, annot=True, fmt="d", cmap=SEQUENTIAL_CMAP, ax=ax, cbar=False)
+        ax.set_title(f"{title} (+ totals)")
         plt.setp(ax.get_xticklabels(), rotation=30, ha="right")
     cec_cross_img = fig_to_img(fig, "06b_cec_cross_tabs")
 
@@ -794,9 +810,10 @@ def section_8_source(df: pd.DataFrame) -> str:
 
     # Channel × reason heatmap
     ch_reason = pd.crosstab(df["channel_simple"], df["subcategory"])
-    fig, ax = plt.subplots(figsize=(13, 4))
-    sns.heatmap(ch_reason, annot=True, fmt="d", cmap=SEQUENTIAL_CMAP, ax=ax, cbar=False)
-    ax.set_title("Channel × Reason (count)")
+    ch_reason_disp = with_totals(ch_reason)
+    fig, ax = plt.subplots(figsize=(13, 4.5))
+    sns.heatmap(ch_reason_disp, annot=True, fmt="d", cmap=SEQUENTIAL_CMAP, ax=ax, cbar=False)
+    ax.set_title("Channel × Reason (+ totals)")
     ax.set_xlabel(""); ax.set_ylabel("")
     plt.setp(ax.get_xticklabels(), rotation=30, ha="right")
     ch_reason_img = fig_to_img(fig, "08c_channel_reason")

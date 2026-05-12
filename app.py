@@ -147,6 +147,27 @@ def fig_palette_axes(fig, ax):
     return fig
 
 
+def with_totals(df: pd.DataFrame, rows: bool = True, cols: bool = True, label: str = "Total") -> pd.DataFrame:
+    """Append a Total row and/or column to a 2-D numeric dataframe for display."""
+    out = df.copy()
+    if cols:
+        out[label] = out.sum(axis=1, numeric_only=True)
+    if rows:
+        # Row of column sums (only over the numeric columns to avoid coercion issues)
+        total_row = out.sum(axis=0, numeric_only=True)
+        out.loc[label] = total_row
+    return out
+
+
+def total_caption(series_or_value, suffix: str = "tickets") -> None:
+    """Render a small caption beneath a chart showing the total."""
+    try:
+        total = int(series_or_value.sum()) if hasattr(series_or_value, "sum") else int(series_or_value)
+    except Exception:
+        total = 0
+    st.caption(f"**Total: {total:,} {suffix}**")
+
+
 def render_enrichment_block(candidate_ids: list[int], max_quotes: int = 3):
     """Streamlit-native version of the quote-card block from build_report.py."""
     found = [(tid, enrichment[str(tid)]) for tid in candidate_ids if str(tid) in enrichment]
@@ -211,9 +232,11 @@ with tabs[0]:
     with a:
         st.markdown("**Top corridors**")
         st.bar_chart(top_corr, color=PALETTE[0])
+        total_caption(top_corr)
     with b:
         st.markdown("**Top contact reasons**")
         st.bar_chart(top_reason, color=PALETTE[1])
+        total_caption(top_reason)
 
 
 # ────────────────────────────────────────────────────────────────────────────
@@ -248,6 +271,7 @@ with tabs[1]:
     fig.autofmt_xdate()
     st.pyplot(fig, use_container_width=True)
     plt.close(fig)
+    total_caption(daily_total)
 
     c1, c2 = st.columns(2)
     with c1:
@@ -255,14 +279,17 @@ with tabs[1]:
         mom = df.pivot_table(index="month", columns="data_source", aggfunc="size", fill_value=0)
         mom = mom.reindex(sorted(mom.index))
         st.bar_chart(mom, color=[PALETTE[0], PALETTE[1]][: mom.shape[1]])
-        st.dataframe(mom.assign(Total=mom.sum(axis=1)), use_container_width=True)
+        st.dataframe(with_totals(mom), use_container_width=True)
+        total_caption(mom.values.sum())
     with c2:
         st.markdown("**Day of week**")
         dow = df.groupby("day_of_week").size().reindex(DOW_ORDER, fill_value=0)
         st.bar_chart(dow, color=PALETTE[1])
+        total_caption(dow)
         st.markdown("**Hour of day (UTC)**")
         hour = df.groupby("hour_utc").size().reindex(range(24), fill_value=0)
         st.bar_chart(hour, color=PALETTE[4])
+        total_caption(hour)
 
 
 # ────────────────────────────────────────────────────────────────────────────
@@ -278,6 +305,7 @@ with tabs[2]:
 
     sub_counts = df["subcategory"].value_counts()
     st.bar_chart(sub_counts.sort_values(), horizontal=True, color=PALETTE[0])
+    total_caption(sub_counts)
 
     st.markdown("##### Top reasons — operational profile")
     top_n = st.slider("Top N reasons", min_value=3, max_value=10, value=5, key="top_reasons_n")
@@ -308,15 +336,19 @@ with tabs[3]:
     with a:
         st.markdown("**Tickets by corridor**")
         ct_count = pd.crosstab(df["Country"], df["Destination Country"]).fillna(0).astype(int)
-        fig, ax = plt.subplots(figsize=(7, 3.5))
-        sns.heatmap(ct_count, annot=True, fmt="d", cmap=SEQUENTIAL_CMAP, ax=ax, cbar=False)
+        ct_count_disp = with_totals(ct_count)
+        fig, ax = plt.subplots(figsize=(7, 4))
+        sns.heatmap(ct_count_disp, annot=True, fmt="d", cmap=SEQUENTIAL_CMAP, ax=ax, cbar=False)
         ax.set_title("Ticket count"); st.pyplot(fig, use_container_width=True); plt.close(fig)
+        total_caption(ct_count.values.sum())
     with b:
         st.markdown("**Total selling amount by corridor**")
         ct_value = df.groupby(["Country", "Destination Country"])["Selling Amount"].sum().unstack(fill_value=0)
-        fig, ax = plt.subplots(figsize=(7, 3.5))
-        sns.heatmap(ct_value, annot=True, fmt=",.0f", cmap=SEQUENTIAL_CMAP, ax=ax, cbar=False)
+        ct_value_disp = with_totals(ct_value)
+        fig, ax = plt.subplots(figsize=(7, 4))
+        sns.heatmap(ct_value_disp, annot=True, fmt=",.0f", cmap=SEQUENTIAL_CMAP, ax=ax, cbar=False)
         ax.set_title("Total selling ($)"); st.pyplot(fig, use_container_width=True); plt.close(fig)
+        st.caption(f"**Total: ${ct_value.values.sum():,.0f}**")
 
     st.markdown("##### Correspondent performance (sorted by stall rate)")
     corr = df.groupby("Correspondent").agg(
@@ -326,7 +358,15 @@ with tabs[3]:
         TotalSelling=("Selling Amount", "sum"),
     ).sort_values("PctStalled", ascending=False)
     corr = corr.round({"AvgResMin": 1, "PctStalled": 1, "TotalSelling": 0})
-    st.dataframe(corr, use_container_width=True)
+    # Append a totals row (avg/median weighted, sums where additive)
+    corr_disp = corr.copy()
+    corr_disp.loc["Total / overall"] = [
+        int(corr["Tickets"].sum()),
+        round(df["resolution_minutes"].mean(), 1),
+        round(100 * df["Order Status"].isin(NON_TERMINAL_STATUSES).mean(), 1),
+        round(df["Selling Amount"].sum(), 0),
+    ]
+    st.dataframe(corr_disp, use_container_width=True)
 
 
 # ────────────────────────────────────────────────────────────────────────────
@@ -342,12 +382,14 @@ with tabs[4]:
 
     st.markdown("##### Order status transition matrix")
     transition = pd.crosstab(df["Original Order Status"], df["Order Status"])
-    fig, ax = plt.subplots(figsize=(9, 5))
-    sns.heatmap(transition, annot=True, fmt="d", cmap=SEQUENTIAL_CMAP, ax=ax, cbar=False)
+    transition_disp = with_totals(transition)
+    fig, ax = plt.subplots(figsize=(9, 5.5))
+    sns.heatmap(transition_disp, annot=True, fmt="d", cmap=SEQUENTIAL_CMAP, ax=ax, cbar=False)
     ax.set_title("Rows = at ticket creation · Columns = at data pull")
     ax.set_xlabel("Current Order Status"); ax.set_ylabel("Original Order Status")
     plt.setp(ax.get_xticklabels(), rotation=30, ha="right")
     st.pyplot(fig, use_container_width=True); plt.close(fig)
+    total_caption(transition.values.sum())
 
     lh = df[df["Order Status"] == "Legal Hold"]
     rest = df[df["Order Status"] != "Legal Hold"]
@@ -367,7 +409,10 @@ with tabs[4]:
             .unstack(fill_value=0).assign(Total=lambda d: d.sum(axis=1))
             .sort_values("Total", ascending=False)
         )
-        st.dataframe(repeat_breakdown, use_container_width=True)
+        # Append totals row across order numbers
+        repeat_breakdown_disp = repeat_breakdown.copy()
+        repeat_breakdown_disp.loc["Total"] = repeat_breakdown.sum(axis=0)
+        st.dataframe(repeat_breakdown_disp, use_container_width=True)
         render_enrichment_block(repeat_df["Ticket ID"].tolist())
 
 
@@ -384,6 +429,7 @@ with tabs[5]:
 
     cec_counts = df["CEC Code"].replace("", "(blank)").value_counts()
     st.bar_chart(cec_counts, color=PALETTE[0])
+    total_caption(cec_counts)
 
     coded = df[df["CEC Code"] != ""]
     if len(coded):
@@ -396,11 +442,13 @@ with tabs[5]:
         ]:
             with container:
                 ct = pd.crosstab(coded["CEC Code"], coded[col])
-                fig, ax = plt.subplots(figsize=(5, 3.2))
-                sns.heatmap(ct, annot=True, fmt="d", cmap=SEQUENTIAL_CMAP, ax=ax, cbar=False)
+                ct_disp = with_totals(ct)
+                fig, ax = plt.subplots(figsize=(5, 3.5))
+                sns.heatmap(ct_disp, annot=True, fmt="d", cmap=SEQUENTIAL_CMAP, ax=ax, cbar=False)
                 ax.set_title(title)
                 plt.setp(ax.get_xticklabels(), rotation=30, ha="right")
                 st.pyplot(fig, use_container_width=True); plt.close(fig)
+                total_caption(ct.values.sum())
 
     st.markdown("##### Compliance / Fraud-routed ticket profile")
     routed = df[df["Ticket group"].isin(COMPLIANCE_GROUPS)]
@@ -494,18 +542,22 @@ with tabs[7]:
         st.markdown("**Channel mix**")
         chan = df["channel_simple"].value_counts()
         st.bar_chart(chan, color=PALETTE[0])
+        total_caption(chan)
     with b:
         st.markdown("**Source mix (who initiated)**")
         src = df["Source"].value_counts()
         st.bar_chart(src, color=PALETTE[1])
+        total_caption(src)
 
     st.markdown("##### Channel × Reason")
     ch_reason = pd.crosstab(df["channel_simple"], df["subcategory"])
-    fig, ax = plt.subplots(figsize=(13, 4))
-    sns.heatmap(ch_reason, annot=True, fmt="d", cmap=SEQUENTIAL_CMAP, ax=ax, cbar=False)
+    ch_reason_disp = with_totals(ch_reason)
+    fig, ax = plt.subplots(figsize=(13, 4.5))
+    sns.heatmap(ch_reason_disp, annot=True, fmt="d", cmap=SEQUENTIAL_CMAP, ax=ax, cbar=False)
     ax.set_xlabel(""); ax.set_ylabel("")
     plt.setp(ax.get_xticklabels(), rotation=30, ha="right")
     st.pyplot(fig, use_container_width=True); plt.close(fig)
+    total_caption(ch_reason.values.sum())
 
 
 # ────────────────────────────────────────────────────────────────────────────
@@ -567,6 +619,8 @@ with tabs[9]:
     st.markdown("##### Reason mix by channel-type")
     reason_mix = df.groupby(["channel_type", "subcategory"]).size().unstack(fill_value=0)
     st.bar_chart(reason_mix.T, color=PALETTE[: reason_mix.shape[0]])
+    total_caption(reason_mix.values.sum())
+    st.dataframe(with_totals(reason_mix), use_container_width=True)
 
 
 # ────────────────────────────────────────────────────────────────────────────
