@@ -68,6 +68,21 @@ DATA_DIR.mkdir(exist_ok=True)
 # internal / non-customer-facing sources that distort the corridor analysis.
 EXCLUDED_LOCATIONS = {"60030", "60040"}
 
+# Transaction volume by destination, Feb–Mar 2026.
+# Sourced from "New files/Transactions Feb to March.png". Use these as the
+# denominator for contact-rate calculations (tickets ÷ transactions).
+# IMPORTANT: covers Feb + March only; restrict ticket counts to those two
+# months when computing contact rate so the comparison is like-for-like.
+TRANSACTIONS_FEB_MAR = {
+    "Samoa":            {"transactions": 21980, "refunds": 254, "modifications": 182, "unpaids": 15,  "paid": 21715},
+    "Solomon Islands":  {"transactions": 14210, "refunds": 251, "modifications": 58,  "unpaids": 30,  "paid": 13926},
+    "Vanuatu":          {"transactions":  3068, "refunds":  80, "modifications": 22,  "unpaids":  5,  "paid":  2985},
+    "Fiji":             {"transactions":  2796, "refunds":  63, "modifications":  3,  "unpaids":  2,  "paid":  2730},
+    "Tonga":            {"transactions":   907, "refunds":   7, "modifications":  8,  "unpaids":  0,  "paid":   901},
+    "Papua New Guinea": {"transactions":   200, "refunds":   9, "modifications":  0,  "unpaids":  0,  "paid":   191},
+}
+TRANSACTIONS_FEB_MAR_PERIOD = "2026-02 + 2026-03"
+
 # Compliance-flagged definition: any non-blank CEC Code.
 NON_TERMINAL_STATUSES = {
     "Sent to Corresp", "Legal Hold", "On Hold", "Posted",
