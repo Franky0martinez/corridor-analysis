@@ -244,7 +244,8 @@ if picked != "—":
     st.markdown("##### Contact timeline")
     timeline = tickets[[
         "Ticket ID", "created", "channel_simple", "subcategory",
-        "Order Status", "Ticket group", "resolution_minutes", "Source",
+        "Original Order Status", "Order Status", "Ticket group",
+        "resolution_minutes", "Source",
     ]].copy()
     timeline["created"] = timeline["created"].dt.strftime("%Y-%m-%d %H:%M")
     timeline["resolution_minutes"] = timeline["resolution_minutes"].round(1)
@@ -252,6 +253,7 @@ if picked != "—":
         "created": "Created (UTC)",
         "channel_simple": "Channel",
         "subcategory": "Reason",
+        "Original Order Status": "OG status",
         "Order Status": "Status at pull",
         "Ticket group": "Group",
         "resolution_minutes": "Resolution (min)",
