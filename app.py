@@ -77,6 +77,8 @@ channels = sorted(df_full["channel_simple"].dropna().unique().tolist())
 destinations = sorted(df_full["Destination Country"].dropna().unique().tolist())
 groups = sorted(df_full["Ticket group"].dropna().unique().tolist())
 sources = sorted(df_full["Source"].dropna().unique().tolist())
+reason_categories = sorted(df_full["category"].dropna().unique().tolist())
+reason_subcategories = sorted(df_full["subcategory"].dropna().unique().tolist())
 
 sel_months = st.sidebar.multiselect("Month", months, default=months)
 sel_data_sources = st.sidebar.multiselect(
@@ -86,6 +88,14 @@ sel_channels = st.sidebar.multiselect("Detailed channel", channels, default=chan
 sel_dests = st.sidebar.multiselect("Destination country", destinations, default=destinations)
 sel_groups = st.sidebar.multiselect("Ticket group", groups, default=groups)
 sel_sources = st.sidebar.multiselect("Source", sources, default=sources)
+sel_reason_cats = st.sidebar.multiselect(
+    "Reason category", reason_categories, default=reason_categories,
+    help="The 'Category::Subcategory' before the '::' (Order, General contact, Agent requests).",
+)
+sel_reason_subs = st.sidebar.multiselect(
+    "Reason subcategory", reason_subcategories, default=reason_subcategories,
+    help="The 'Category::Subcategory' after the '::' (Refund, Legal hold, Transaction status, etc.).",
+)
 only_compliance = st.sidebar.checkbox("Only CEC-flagged tickets", value=False)
 only_legal_hold = st.sidebar.checkbox("Only Legal Hold status", value=False)
 only_high_value = st.sidebar.checkbox(f"Only high-value (> ${HIGH_VALUE_THRESHOLD:,.0f})", value=False)
@@ -97,6 +107,8 @@ df = df_full[
     & df_full["Destination Country"].isin(sel_dests)
     & df_full["Ticket group"].isin(sel_groups)
     & df_full["Source"].isin(sel_sources)
+    & df_full["category"].isin(sel_reason_cats)
+    & df_full["subcategory"].isin(sel_reason_subs)
 ].copy()
 if only_compliance:
     df = df[df["is_compliance_flagged"]]

@@ -64,14 +64,30 @@ st.markdown(
 # ────────────────────────────────────────────────────────────────────────────
 st.sidebar.header("Filters")
 months = sorted(df_full["month"].dropna().unique().tolist())
+reason_categories = sorted(df_full["category"].dropna().unique().tolist())
+reason_subcategories = sorted(df_full["subcategory"].dropna().unique().tolist())
+destinations = sorted(df_full["Destination Country"].dropna().unique().tolist())
+
 sel_months = st.sidebar.multiselect("Month", months, default=months)
+sel_dests = st.sidebar.multiselect("Destination country", destinations, default=destinations)
+sel_reason_cats = st.sidebar.multiselect(
+    "Reason category", reason_categories, default=reason_categories
+)
+sel_reason_subs = st.sidebar.multiselect(
+    "Reason subcategory", reason_subcategories, default=reason_subcategories
+)
 min_repeats = st.sidebar.slider("Min ticket count per order", min_value=2, max_value=10, value=2)
 sort_by = st.sidebar.selectbox(
     "Sort rollup by",
     ["Ticket count (worst first)", "Total selling amount", "Most recent contact", "Order number"],
 )
 
-df = df_full[df_full["month"].isin(sel_months)].copy()
+df = df_full[
+    df_full["month"].isin(sel_months)
+    & df_full["Destination Country"].isin(sel_dests)
+    & df_full["category"].isin(sel_reason_cats)
+    & df_full["subcategory"].isin(sel_reason_subs)
+].copy()
 
 
 # ────────────────────────────────────────────────────────────────────────────
