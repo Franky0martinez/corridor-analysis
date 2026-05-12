@@ -1,0 +1,25 @@
+Ticket ID,selection_reasons,data_source,month,Order Status,Selling Amount,Destination Country,Ticket group,Ria Order Number,Reason,resolution_minutes,Ticket Channel
+21193135,>24h_outlier,inbound,2026-02,Paid,100.0,Vanuatu,Ria - APAC Care,NZ1129900763,Order::Recall,27378,Inbound call
+21206661,new_country_Solomon_Islands,inbound,2026-02,Paid,400.0,Solomon Islands,Ria - Care,AU723648063,Order::Transaction status,5,Inbound call
+21209566,new_country_Solomon_Islands,inbound,2026-02,Sent to Corresp,2000.0,Solomon Islands,Ria - Care,AU1143067263,Order::Modification,6,Inbound call
+21233321,new_country_Papua_New_Guinea,inbound,2026-02,Paid,112.0,Papua New Guinea,Ria - Care,AU1476220878,Order::Proof of payment,5,Inbound call
+21316500,repeat_contact_6x,inbound,2026-02,Sent to Corresp,742.0,Vanuatu,Ria - Care,NZ1023550163,Order::Transaction status,9,Inbound call
+21353709,repeat_contact_6x,inbound,2026-02,Refunded,95.0,Solomon Islands,Ria - APAC Care,AU1499041663,Order::Cancellation,14706,Inbound call
+21420379,compliance_routed,inbound,2026-02,Sent to Corresp,2500.0,Samoa,Ria - APAC Compliance,NZ1596084363,Order::Legal hold,11,Inbound call
+21906389,new_country_Papua_New_Guinea,inbound,2026-03,Paid,230.0,Papua New Guinea,Ria - APAC Care,AU295666564,Order::Proof of payment,5513,Inbound call
+22137205,>24h_outlier,inbound,2026-03,To Cancel,2000.0,Solomon Islands,Ria - APAC Care,AU1000975064,Order::Cancellation,20044,Inbound call
+22163365,repeat_contact_7x,inbound,2026-03,Posted - Under Review (Digital),96.0,Fiji,Ria - APAC Care,AU1157296364,Order::Legal hold,45,Inbound call
+22191299,legal_hold_top_value,inbound,2026-03,Legal Hold,6329.11,Samoa,Ria - APAC Care,NZ984843664,Order::Legal hold,166,Inbound call
+22274707,compliance_routed,inbound,2026-03,Sent to Corresp,2688.17,Samoa,Ria - APAC Compliance,AU1390139464,Order::Legal hold,8,Inbound call
+22346000,compliance_routed,inbound,2026-03,Voided,750.0,Vanuatu,Ria - Digital Fraud,AU938408364,Order::Refund,2070,Inbound call
+22386335,compliance_routed,inbound,2026-03,Sent to Corresp,1492.0,Samoa,Ria - APAC Compliance,NZ1650487664,Order::Legal hold,7,Inbound call
+22439289,>24h_outlier,inbound,2026-03,Sent to Corresp,50.0,Solomon Islands,Ria - APAC Care,AU1433181764,Order::Transaction status,21527,Inbound call
+22518898,>24h_outlier,inbound,2026-03,Paid,54.95,Samoa,Ria - APAC Care,AU2097006763,Order::Proof of payment,51524,Inbound call
+22705484,legal_hold_top_value,inbound,2026-04,Legal Hold,9000.0,Samoa,Ria - Care,AU214031709,Order::Legal hold,6,Inbound call
+22754747,compliance_routed,inbound,2026-04,Legal Hold,5000.0,Samoa,Ria - APAC Compliance,AU286498609,General contact::Contact not verified,34,Inbound call
+22755014,legal_hold_top_value,inbound,2026-04,Legal Hold,6500.0,Samoa,Ria - Care,AU324773609,Order::Refund,6,Inbound call
+23015104,legal_hold_top_value,inbound,2026-04,Legal Hold,8924.73,Samoa,Ria - Care,AU677740709,Order::Legal hold,317,Inbound call
+23074522,legal_hold_top_value,inbound,2026-04,Legal Hold,5500.0,Samoa,Ria - Care,AU996300809,Order::Legal hold,6,Inbound call
+23151496,compliance_routed,inbound,2026-04,Refunded,1121.36,Vanuatu,Ria - Digital Fraud,AU367115709,Order::Refund,10159,Inbound call
+22989503,messaging_sample,messaging,2026-04,Sent to Corresp,,Vanuatu,Ria - Care,AU728015609,Order::Modification,10,Chat - VA to Rep
+23172507,messaging_sample,messaging,2026-04,To Cancel,,Samoa,Ria - APAC Care,AU989535209,Order::Cancellation,3357,Chat - VA to Rep

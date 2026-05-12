@@ -1,0 +1,15 @@
+Original Order Status,AwaitingBalance,AwaitingVerification,Canceled,Completed,Legal Hold,On Hold,Paid,Posted,Posted - Under Review (Digital),Refund in Progress (Digital),Refunded,Resent,Sent to Corresp,To Cancel,Voided, 
+AwaitingBalance,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+AwaitingVerification,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+Canceled,0,0,57,0,0,0,0,0,0,0,0,1,0,0,0,1
+Completed,0,0,0,12,0,0,0,0,0,0,0,0,0,0,0,0
+Legal Hold,0,0,0,0,47,0,1,0,0,1,2,0,0,0,0,0
+On Hold,0,0,1,0,0,12,0,0,0,0,0,0,0,0,0,0
+Paid,0,0,0,0,0,0,69,1,0,0,0,0,0,0,0,0
+Posted,0,0,0,0,0,0,0,14,0,0,1,0,0,0,0,0
+Posted - Under Review (Digital),0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0
+Refunded,0,0,0,0,0,0,0,0,0,0,22,0,0,0,0,0
+Resent,0,0,0,0,0,0,0,0,0,0,0,5,0,0,0,0
+Sent to Corresp,0,0,2,0,0,0,0,0,0,0,0,0,76,0,0,1
+To Cancel,0,0,0,0,0,0,0,1,0,0,0,0,0,16,0,0
+Voided,0,0,0,0,0,0,0,0,0,0,0,0,0,0,11,0
