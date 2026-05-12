@@ -391,7 +391,46 @@ with tabs[3]:
         "MedianResDays": "Median resolution (days)",
         "TotalSelling": "Total selling ($)",
     })
-    st.dataframe(corridor_res_disp, use_container_width=True)
+    st.caption("👆 Click a corridor row to drill into the underlying tickets below.")
+    corridor_event = st.dataframe(
+        corridor_res_disp,
+        use_container_width=True,
+        on_select="rerun",
+        selection_mode="single-row",
+        key="corridor_table",
+    )
+    if corridor_event.selection.rows:
+        picked_idx = corridor_event.selection.rows[0]
+        picked_corridor = corridor_res_disp.index[picked_idx]
+        if picked_corridor == "Total / overall":
+            drill_df = df.copy()
+            drill_label = "all tickets in current filter"
+        else:
+            drill_df = df[df["corridor"] == picked_corridor].copy()
+            drill_label = f"corridor {picked_corridor}"
+        st.markdown(f"##### 🔍 {len(drill_df)} tickets — {drill_label}")
+        drill_cols = [
+            "Ticket ID", "month", "created", "Correspondent", "Source",
+            "subcategory", "Order Status", "Ticket group",
+            "Selling Amount", "resolution_minutes", "CEC Code", "channel_simple",
+        ]
+        drill_disp = drill_df[drill_cols].copy()
+        drill_disp["created"] = drill_disp["created"].dt.strftime("%Y-%m-%d %H:%M")
+        drill_disp["resolution_minutes"] = drill_disp["resolution_minutes"].round(1)
+        drill_disp = drill_disp.rename(columns={
+            "Ticket ID": "Ticket ID",
+            "created": "Created (UTC)",
+            "subcategory": "Reason",
+            "Order Status": "Status",
+            "Ticket group": "Group",
+            "Selling Amount": "Selling ($)",
+            "resolution_minutes": "Resolution (min)",
+            "channel_simple": "Channel",
+        })
+        st.dataframe(drill_disp.sort_values("Created (UTC)", ascending=False),
+                     use_container_width=True, hide_index=True)
+        # Offer enrichment quotes for any of these tickets that we've scraped
+        render_enrichment_block(drill_df["Ticket ID"].tolist(), max_quotes=5)
 
     st.markdown("##### Correspondent performance (sorted by stall rate)")
     corr = df.groupby("Correspondent").agg(
@@ -425,7 +464,44 @@ with tabs[3]:
         "PctStalled": "% in non-terminal status",
         "TotalSelling": "Total selling ($)",
     })
-    st.dataframe(corr_disp, use_container_width=True)
+    st.caption("👆 Click a correspondent row to drill into its tickets below.")
+    corr_event = st.dataframe(
+        corr_disp,
+        use_container_width=True,
+        on_select="rerun",
+        selection_mode="single-row",
+        key="correspondent_table",
+    )
+    if corr_event.selection.rows:
+        picked_idx = corr_event.selection.rows[0]
+        picked_corr = corr_disp.index[picked_idx]
+        if picked_corr == "Total / overall":
+            drill_df = df.copy()
+            drill_label = "all tickets in current filter"
+        else:
+            drill_df = df[df["Correspondent"] == picked_corr].copy()
+            drill_label = f"correspondent {picked_corr}"
+        st.markdown(f"##### 🔍 {len(drill_df)} tickets — {drill_label}")
+        drill_cols = [
+            "Ticket ID", "month", "created", "corridor", "Source",
+            "subcategory", "Order Status", "Ticket group",
+            "Selling Amount", "resolution_minutes", "CEC Code", "channel_simple",
+        ]
+        drill_disp = drill_df[drill_cols].copy()
+        drill_disp["created"] = drill_disp["created"].dt.strftime("%Y-%m-%d %H:%M")
+        drill_disp["resolution_minutes"] = drill_disp["resolution_minutes"].round(1)
+        drill_disp = drill_disp.rename(columns={
+            "created": "Created (UTC)",
+            "subcategory": "Reason",
+            "Order Status": "Status",
+            "Ticket group": "Group",
+            "Selling Amount": "Selling ($)",
+            "resolution_minutes": "Resolution (min)",
+            "channel_simple": "Channel",
+        })
+        st.dataframe(drill_disp.sort_values("Created (UTC)", ascending=False),
+                     use_container_width=True, hide_index=True)
+        render_enrichment_block(drill_df["Ticket ID"].tolist(), max_quotes=5)
 
 
 # ────────────────────────────────────────────────────────────────────────────
