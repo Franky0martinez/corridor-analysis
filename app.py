@@ -242,15 +242,23 @@ with tabs[0]:
     st.subheader("Where the volume sits")
     top_corr = df["corridor"].value_counts().head(5)
     top_reason = df["subcategory"].value_counts().head(5)
+    all_corr_total = int(df["corridor"].value_counts().sum())
+    all_reason_total = int(df["subcategory"].value_counts().sum())
     a, b = st.columns(2)
     with a:
-        st.markdown("**Top corridors**")
+        st.markdown("**Top 5 corridors**")
         st.bar_chart(top_corr, color=PALETTE[0])
-        total_caption(top_corr)
+        st.caption(
+            f"**Top 5 shown: {int(top_corr.sum()):,} tickets** "
+            f"(of {all_corr_total:,} across all corridors)"
+        )
     with b:
-        st.markdown("**Top contact reasons**")
+        st.markdown("**Top 5 contact reasons**")
         st.bar_chart(top_reason, color=PALETTE[1])
-        total_caption(top_reason)
+        st.caption(
+            f"**Top 5 shown: {int(top_reason.sum()):,} tickets** "
+            f"(of {all_reason_total:,} across all reasons)"
+        )
 
 
 # ────────────────────────────────────────────────────────────────────────────
