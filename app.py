@@ -304,19 +304,25 @@ with tabs[3]:
         "pattern is concentrated in a few partners."
     )
 
+    # Destination on rows (left), Country on columns (bottom) + a Total column
+    # so you can scan down a destination row to see its corridor total.
     a, b = st.columns(2)
     with a:
-        st.markdown("**Tickets by corridor**")
-        ct_count = pd.crosstab(df["Country"], df["Destination Country"]).fillna(0).astype(int)
-        fig, ax = plt.subplots(figsize=(7, 3.5))
+        st.markdown("**Tickets by destination country (+ total)**")
+        ct_count = pd.crosstab(df["Destination Country"], df["Country"]).fillna(0).astype(int)
+        ct_count = ct_count.assign(Total=ct_count.sum(axis=1))
+        fig, ax = plt.subplots(figsize=(7, 4))
         sns.heatmap(ct_count, annot=True, fmt="d", cmap=SEQUENTIAL_CMAP, ax=ax, cbar=False)
-        ax.set_title("Ticket count"); st.pyplot(fig, use_container_width=True); plt.close(fig)
+        ax.set_title("Ticket count"); ax.set_xlabel("Origin country"); ax.set_ylabel("Destination country")
+        st.pyplot(fig, use_container_width=True); plt.close(fig)
     with b:
-        st.markdown("**Total selling amount by corridor**")
-        ct_value = df.groupby(["Country", "Destination Country"])["Selling Amount"].sum().unstack(fill_value=0)
-        fig, ax = plt.subplots(figsize=(7, 3.5))
+        st.markdown("**Total selling amount by destination country (+ total)**")
+        ct_value = df.groupby(["Destination Country", "Country"])["Selling Amount"].sum().unstack(fill_value=0)
+        ct_value = ct_value.assign(Total=ct_value.sum(axis=1))
+        fig, ax = plt.subplots(figsize=(7, 4))
         sns.heatmap(ct_value, annot=True, fmt=",.0f", cmap=SEQUENTIAL_CMAP, ax=ax, cbar=False)
-        ax.set_title("Total selling ($)"); st.pyplot(fig, use_container_width=True); plt.close(fig)
+        ax.set_title("Total selling ($)"); ax.set_xlabel("Origin country"); ax.set_ylabel("Destination country")
+        st.pyplot(fig, use_container_width=True); plt.close(fig)
 
     st.markdown("##### Correspondent performance (sorted by stall rate)")
     corr = df.groupby("Correspondent").agg(

@@ -64,6 +64,10 @@ MESSAGING_FILES = [
 CHARTS_DIR.mkdir(exist_ok=True)
 DATA_DIR.mkdir(exist_ok=True)
 
+# Customer Sending Locations to drop at load time. The 60030 / 60040 codes are
+# internal / non-customer-facing sources that distort the corridor analysis.
+EXCLUDED_LOCATIONS = {"60030", "60040"}
+
 # Compliance-flagged definition: any non-blank CEC Code.
 NON_TERMINAL_STATUSES = {
     "Sent to Corresp", "Legal Hold", "On Hold", "Posted",
@@ -179,9 +183,14 @@ def load_data() -> pd.DataFrame:
     df = df[df["Country"].isin(apac_origins)].reset_index(drop=True)
     print(f"  (filtered out {pre - len(df)} non-APAC-origin rows)")
 
+    # Drop internal / non-customer-facing sending locations.
+    df["Customer Sending Location"] = df["Customer Sending Location"].fillna("").astype(str).str.strip()
+    pre = len(df)
+    df = df[~df["Customer Sending Location"].isin(EXCLUDED_LOCATIONS)].reset_index(drop=True)
+    print(f"  (filtered out {pre - len(df)} rows from excluded sending locations {sorted(EXCLUDED_LOCATIONS)})")
+
     df["Source"] = df["Source"].fillna("").astype(str).str.strip().replace("", "(blank)")
     df["CEC Code"] = df["CEC Code"].fillna("").astype(str).str.strip()
-    df["Customer Sending Location"] = df["Customer Sending Location"].fillna("").astype(str).str.strip()
     df["Correspondent"] = df["Correspondent"].fillna("").astype(str).str.strip()
     df["Ria Order Number"] = df["Ria Order Number"].fillna("").astype(str).str.strip()
     df["Destination Country"] = df["Destination Country"].fillna("Unknown").astype(str).str.strip()
@@ -505,17 +514,25 @@ def section_3_reasons(df: pd.DataFrame, enrichment: dict) -> str:
 
 
 def section_4_corridor(df: pd.DataFrame) -> str:
-    ct_count = pd.crosstab(df["Country"], df["Destination Country"]).fillna(0).astype(int)
-    ct_value = df.groupby(["Country", "Destination Country"])["Selling Amount"].sum().unstack(fill_value=0)
+    # Destination on rows (left), Country on columns (bottom) so the eye
+    # naturally sums down a destination row to see its corridor total.
+    ct_count = pd.crosstab(df["Destination Country"], df["Country"]).fillna(0).astype(int)
+    ct_value = df.groupby(["Destination Country", "Country"])["Selling Amount"].sum().unstack(fill_value=0)
     ct_value = ct_value.reindex(index=ct_count.index, columns=ct_count.columns, fill_value=0)
-    ct_count.to_csv(DATA_DIR / "corridor_crosstab_count.csv")
-    ct_value.to_csv(DATA_DIR / "corridor_crosstab_value.csv")
 
-    fig, axes = plt.subplots(1, 2, figsize=(13, 4))
-    sns.heatmap(ct_count, annot=True, fmt="d", cmap=SEQUENTIAL_CMAP, ax=axes[0], cbar=False)
-    axes[0].set_title("Ticket count by corridor")
-    sns.heatmap(ct_value, annot=True, fmt=",.0f", cmap=SEQUENTIAL_CMAP, ax=axes[1], cbar=False)
-    axes[1].set_title("Total selling amount by corridor ($)")
+    # Add a Total column showing the destination-level total
+    ct_count_with_total = ct_count.assign(Total=ct_count.sum(axis=1))
+    ct_value_with_total = ct_value.assign(Total=ct_value.sum(axis=1))
+    ct_count_with_total.to_csv(DATA_DIR / "corridor_crosstab_count.csv")
+    ct_value_with_total.to_csv(DATA_DIR / "corridor_crosstab_value.csv")
+
+    fig, axes = plt.subplots(1, 2, figsize=(13, 4.5))
+    sns.heatmap(ct_count_with_total, annot=True, fmt="d", cmap=SEQUENTIAL_CMAP, ax=axes[0], cbar=False)
+    axes[0].set_title("Ticket count by destination country (+ total)")
+    axes[0].set_xlabel("Origin country"); axes[0].set_ylabel("Destination country")
+    sns.heatmap(ct_value_with_total, annot=True, fmt=",.0f", cmap=SEQUENTIAL_CMAP, ax=axes[1], cbar=False)
+    axes[1].set_title("Total selling amount by destination country ($) (+ total)")
+    axes[1].set_xlabel("Origin country"); axes[1].set_ylabel("Destination country")
     corridor_img = fig_to_img(fig, "04a_corridor_heatmaps")
 
     top_count_corridor = df["corridor"].value_counts().idxmax()
